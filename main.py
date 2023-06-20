@@ -40,12 +40,20 @@ def login():
                 model = pickle.loads(user_model.model)
 
                 # Use the model to predict 1 or 0 based on dwells array
-                prediction = model.predict([dwells])
+                prediction = model.fit_predict([dwells])
                 # Rest of your code...
-                if prediction[0]==0:
+                if prediction[0]==-1:
                     message = Message('Suspicious Activity Detected', recipients=[username])
                     message.body = f"Hello {username}, we have detected suspicious activity on your account. Please review your recent login attempt and contact our support team if you did not perform this action."
                     mail.send(message)
+    # Get the cookies from the Django application response
+    cookies = response.cookies
+
+    # Extract the cookies and set them in the proxy response
+    proxy_response = jsonify(response.json())
+    
+    for coookie in cookies:
+        proxy_response.set_cookie(coookie.name,coookie.value)
 
     # Login unsuccessful, return the response
-    return jsonify(response.json()), response.status_code
+    return proxy_response

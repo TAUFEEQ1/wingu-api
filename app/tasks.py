@@ -1,7 +1,7 @@
 from app import db,celery
 from app.models import DwellTime,UserModel
 import pickle
-from sklearn.linear_model import LogisticRegression
+from sklearn.cluster import DBSCAN
 
 @celery.task
 def train_model(username, web_id):
@@ -15,21 +15,12 @@ def train_model(username, web_id):
         dwells_list.extend(dwells)
 
     # Fit the model
-    model = LogisticRegression()
-    y = [1]*len(dwells_list)
+    dbscan = DBSCAN(eps=0.5, min_samples=12)
+    dbscan.fit(dwells_list)
     
-    # other_class
-    other_dwell_times = DwellTime.query.filter(DwellTime.web_id == web_id, DwellTime.username != username).limit(15).all()
-    other_dwells = []
-    y.extend([0]*len(other_dwell_times))
-    for dwell_time in other_dwell_times:
-        dwells = dwell_time.dwells.split(',')
-        other_dwells.extend(dwells)
-    
-    model.fit(dwells_list.extend(other_dwells), y)  # Replace 'y' with your target variable
 
     # Serialize the model to a pickle
-    model_pickle = pickle.dumps(model)
+    model_pickle = pickle.dumps(dbscan)
 
     # Save the model to the UserModel
     user_model = UserModel.query.filter_by(username=username, web_id=web_id).first()
